@@ -1,0 +1,5 @@
+indi\jsees\springcloud\system\service\impl\SystemServiceImpl.class
+indi\jsees\springcloud\system\controller\SystemController.class
+indi\jsees\springcloud\system\service\SystemService.class
+indi\jsees\springcloud\system\dao\SystemDao.class
+indi\jsees\springcloud\system\SystemProvider8001_App.class

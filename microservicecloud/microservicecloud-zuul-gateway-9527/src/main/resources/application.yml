@@ -1,0 +1,27 @@
+server:
+  port: 9527
+  
+spring: 
+  application:
+    name: microservicecloud-zuul-gateway
+    
+eureka:
+  client:
+    service-url:
+      defaultZone: http://eureka7001.com:7001/eureka,http://eureka7002:7002/eureka,http://eureka7003.com:7003/eureka
+  instance: 
+    instance-id: gateway-9527.com
+    prefer-ip-address: true
+    
+zuul: 
+  prefix: /soft18cm              # 所有微服务公共前缀
+  # ignored-services: microservicecloud-system # 将原访问地址隐藏(即原真实地址不可访问) 
+  ignored-services: "*"          # 多个隐藏
+  routes:    jsees.serviceId: microservicecloud-system
+    jsees.path: /jsees/**
+    
+info:
+  app.name: indi.jsees.springcloud
+  company.name: www.baidu.com
+  build.artifactId: $project.artifactId$
+  build.version: $project.version$

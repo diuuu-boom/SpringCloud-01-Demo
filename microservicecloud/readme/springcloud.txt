@@ -1,0 +1,174 @@
+Feign 是一个声明式 WebService 客户端。使用Feign能让编写 WebService 客户端更加简单,它的使用方法是定义一个接口,
+然后在上面添加注解,同时也支持JAX-RS标准的注解.Feign也支持可插拔式编码和解码器。SpringCloud 对Feign进行封装,使
+其支持了SpringMVC 标准注解和HttpMessageConverters。Feign 可以与Eureka和Ribbon组合使用以支持负载均衡.
+
+Feign 是一个生命式的Web服务客户端,使得编写Web服务客户端变得非常容易。
+只需要创建一个接口,然后在上面添加注解即可.
+
+之前我们使用ribbon进行负载均衡,功能很强大,甚至可以自己定义算法。
+
+Feign 使用的目的:
+	1. 之前一直使用的是:
+		private static final String REST_URL_PREFIX = "http://MICROSERVICECLOUD-SYSTEM"
+	来进行对微服务的访问。
+	
+	2. 现在我们使用面向接口编程的思想: 如WebService接口,比如我们的Dao接口
+		2.1 微服务名字获得调用地址
+		2.2 就是通过接口+注解德1形式,获得我们的调用服务.
+			适应社区其他程序员提出的,还是统一的面向接口编程. ---Feign
+			
+		只需要创建一个接口,然后在上面调用即可.	
+
+Feign 作用:
+	旨在编写java Http 客户端变得更容易。
+	
+	前面在使用Ribbon+RestTemplate对 Http 请求进行封装处理,形成一套模板化的调用方式,但是在实际运用开发中
+	由于对微服务的依赖服务的调用可能不止一处,往往一个借口被多次调用,所以通常都会针对每个微服务自行进行封装一血客
+	户端类来包装这些依赖服务的调用,所以,Feign在此基础上做了进一步封装,由他们来帮助我们定义和实现依赖服务接口定
+	义。在Feign的实现下,我们只需创建一个接口并使用注解方式来配置它(以前是Dao接口上面标注@Mapper注解,现在是
+	一个微服务接口上面标注一个Feign注解即可),即可完成对服务提供方的接口绑定,简化了使用spring cloud Ribbon
+	自行封装微服务调用客户端的开发量.
+	
+Feign 通过接口的方法调用Rest 服务（之前是Ribbon+RestTemplate）
+该请求发送给Eureka服务器 (http://MICROSERVICECLOUD-SYSTEM/system/list)
+通过Feign直接找到服务接口,由于在进行服务调用的时候融合了 Ribbon 技术,所以也支持负载均衡作用.
+
+服务降级:
+	整体资源快不够了,忍痛将某些服务先关闭,待度过难关,在开启回来.
+	服务的降级处理是在客户端实现的完成的,与服务端没有关系.
+	
+	故意关闭微服务后:
+		此时服务端provider已经down了,但是我们做了服务降级处理,让客户端也会获得提示信息而不会挂起耗死服务器
+【服务熔断】:
+	一般是某个服务故障或者异常引起,类似现实世界中的 "保险丝" ,当某个异常条件被触发,直接熔断整个服务,而不是一直等到此服务超时.
+【服务降级】:
+	所谓降级,一般是从整体负荷考虑。就是当某个服务熔断之后,服务器将不再被调用,
+	此时客户端可以自己准备一个本地的fallback回调,返回一个缺省值。
+	这样做,虽然服务水平下降,但是好歹可用,比直接挂掉要强.
+	
+除了隔离依赖服务的调用以外,Hystrix还提供了准实时的 调用监控 (Hystrix Dashboard), Hystrix 会持续地记录所有通过 Hystrix 发起
+的请求的执行信息,并以统计报表和图形的形式展示给用户,包括每秒执行多少成功,多少失败等.
+Netflix 通过 hystrix-metrics-event-stream项目实现了对以上指标的监控。Spring cloud也提供了 Hystrix DashBoard的整合,
+对监控内容转化成可视化界面。
+
+测试地址: http://localhost:端口号/hystrix
+	如何查看 Hystrix Stream 监控供应者服务端口图形化信息:
+		7色:
+		1圈: 实心圈: 共有两种含义。他通过颜色的变化代表了实例的健康程度从 绿色>黄色>橙色>红色 递减
+			该实心圈除了颜色的变化之外,它的大小也会根据实例的请求流量发生变化,流量越大该实心圆就越大。
+			所以通过施心远展示,就可以在大量的实例中快速的发现 ---故障实例和高压实例---。
+		1线:
+
+zuul 网关:
+		包含了队请求的路由和过滤两个最主要的功能:
+		其中路由功能负责将外部请求转发到具体的微服务实例上，是实现外部访问统一入口的基础而过滤器功能则负责队请求的处理过程干预，
+		是实现请求校验、服务聚合等功能的基础.Zuul 和Eurek进行整合，将Zuul自身注册为Eureka服务治理下的应用,同时从Eureka
+		中获得其他微服务的消息,也即以后的访问微服务都是通过Zuul跳转后获得。
+		
+	Zuul 服务最终还是会注册进 Eureka
+	
+提供 = 代理 + 路由 + 过滤 三大功能
+
+集成测试:
+	不使用路由: http://localhost:8001/system/get/1
+	使用路由:  http://myzuul.com:9527/microservicecloud-system/system/get/1
+	
+【路由访问映射规则】:
+	before
+		http://myzuul.com:9527/microservicecloud-system/system/get/2
+	---------------------------------------------------------------------	
+	|	zuul:                                                           |
+	|		routes:                                                     |
+	|			jsees.serviceId: microservicecloud-system               |
+	|			jsees.path: /jsees/**                                   |
+	---------------------------------------------------------------------	
+	after
+		http://myzuul.com:9527/jsees/system/get/1
+
+设置统一公共前缀:
+	http://myzuul.com:9527/soft18cm/jsees/system/get/1
+	
+SpringCloud Config 分部署配置中心:
+	分布式系统面临的问题----配置问题
+	微服务意味着要将单体应用程序中的业务拆分成一个个子服务,每个服务的粒度相对较小,因此系统中会出现大量的服务.由于每个服务
+	都需要必要的配置信息才能运行,所以一套集中式的、动态的配置管理设施是必不可少的.SpringCloud提供了ConfigServer来
+	解决这个问题,我们每一个微服务自己带着一个 application.yml ,上百个配置文件的管理
+SpringCloud Config 为微服务架构中的微服务提供集中化的外部配置支持,配置服务器为各个不同微服务应用的所有环境提供了一个
+	中心化的外部配置。
+
+SpringCloud Config 分为 服务端 和 客户端 两部分
+	服务端: 也称为 分布式配置中心,它是一个独立微服务应用,用来连接配置服务器并为客户端提供获取配置信息, 加密、解密信息 等访问接口.
+	客户端: 则是通过指定的配置中心来管理应用资源,以及与业务相关的配置内容,并在启动的时候从配置中心获取和加载配置信息配置服务默认
+		      采用 git 来储存配置信息,这样就有助于对环境配置进行版本管理,并且可以通过git客户端工具来方便的管理和访问配置内容.
+		      
+主要功能:
+	集中管理配置文件
+	不同环境不同配置,动态化的配置更新,分环境部署比如 dev/test/prod/beta/release
+	运行期间动态调整配置,不再需要在每个服务部署的机器上编写配置文件,服务会向配置中心统一拉取配置自己
+	当配置发生变动时,服务不需要重启即可感知到配置的变化并应用新的配置
+	将配置信息以REST接口的形式暴露出来.
+	
+与GitHub 整合配置:
+	由于SpringCloud Config 默认使用Git 来存储配置文件(也有其他方式,比如支持SVN和本地文件),
+	但最推荐的该是Git,而且使用的是http/https访问的形式
+	
+1. 在github 上面创建一个仓库 microservicecloud-config 
+2. 将该仓库clone 到本地
+3. 创建 application.yml文件 注意保存形式字符集为 UTF-8！！！
+4. 将创建好的 application.yml 推送到 github 仓库上.
+	$ git add.
+	$ git commit -m "init file"
+	$ git push origin master
+5. 在eclipse 新建model microservicecloud-config-3344
+6. 启动该模块 并测试: http://config-3344.com:3344/application-dev.yml
+				 http://config-3344.com:3344/application-test.yml
+				 http://config-3344.com:3344/application-xxx.yml(不存在的配置)
+【访问配置的规则】: (5种)
+	/{application}/{profile}[/{lable}]
+	/{application}-{profile}.yml
+	/{lable}/{application}-{profile}.yml
+	/{application}-{profile}.propertis
+	/{lable}/{application}-{profile}.properties
+	
+7. 在eclipse 新建module microservicecloud-config-client-3355 
+
+application.yml 是用户级别的资源配置项
+bootstrap.yml   是系统级的. 优先级更高
+
+SpringCloud 会创建一个 `BootStrap Context`,作为Spring应用的 Application Context 的上下文。初始化的时候。
+`BootStrap Context` 负责从外部资源加载配置属性并解析配置。这两个上下文共享一个从外部获取的`Environment`.
+`BooStrap` 属性有高优先级,默认情况下,他们不会被本地覆盖。`BootStrap Context` 和 `Application Context` 有着不同
+的约定
+所以新增了一个`bootstrap.yml` 文件, 保证 `BootStrap Context` 和 `Application Context` 配置的分离 
+
+测试 : 1. 启动Config配置文件中心 3344微服务并自测  http://config-3344.com:3344/application-dev.yml
+	 2. 启动3355作为Client 准备访问:
+	 		若当前项目环境为 dev:  dev默认在 github上面端口号就是8201
+	 						  http://client-config.com:8201/config
+	 		若当前项目环境为 test: test默认在github上面端口号就是8202
+	 						  http://client-config.com:8202/config
+	 3. bootstrap.yml里面的profile 值是什么,决定从github上读取什么
+	 成功实现从客户端 3355 访问SpringCloud Config3344 通过 GitHub 获取配置信息
+	
+	
+	
+实际运用:
+	1. Config 服务端配置 OK 且测试通过,我们可以Config + GitHub 进行配置修改并获得内容
+	
+	2. 此时我们做一个eureka服务+一个Dept访问微服务,将两个微服务的配置统一由 github 获得实现统一配置分布式管理,
+	        完成多环境的变更.	
+	        
+测试: 
+	先启动microservicecloud-config-3344 微服务,保证Config总配置是ok的
+	再启动microservicecloud-config-eureka-client-7001 微服务
+	http://eureka7001.com:7001/
+	
+测试: test 配置默认访问: http://localhost:8001/system/list
+	换配置为 dev 可以访问到: http://localhost:8001/system/list
+	
+nginx 主要功能: 反向代理 + 动静分离 + 负载均衡
+	
+	
+	
+			
+			
